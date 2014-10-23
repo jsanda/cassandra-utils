@@ -1,0 +1,37 @@
+# Cassandra storage config YAML
+
+# NOTE:
+#   See http://wiki.apache.org/cassandra/StorageConfiguration for
+#   full explanations of configuration directives
+# /NOTE
+
+# The name of the cluster. This is mainly used to prevent machines in
+# one logical cluster from joining another.
+${cluster_name.name}: '${cluster_name.value}'
+
+# This defines the number of tokens randomly assigned to this node on the ring
+# The more tokens, relative to other nodes, the larger the proportion of data
+# that this node will store. You probably want all nodes to have the same number
+# of tokens assuming they have equal hardware capability.
+#
+# If you leave this unspecified, Cassandra will use the default of 1 token for legacy compatibility,
+# and will use the initial_token as described below.
+#
+# Specifying initial_token will override this setting on the node's initial start,
+# on subsequent starts, this setting will apply even if initial token is set.
+#
+# If you already have a cluster with 1 token per node, and wish to migrate to
+# multiple tokens per node, see http://wiki.apache.org/cassandra/Operations
+${num_tokens.name}: ${num_tokens.value}
+
+# initial_token allows you to specify tokens manually.  While you can use # it with
+# vnodes (num_tokens > 1, above) -- in which case you should provide a
+# comma-separated list -- it's primarily used when adding nodes # to legacy clusters
+# that do not have vnodes enabled.
+${initial_token.name}: ${initial_token.value}
+
+# See http://wiki.apache.org/cassandra/HintedHandoff
+# May either be "true" or "false" to enable globally, or contain a list
+# of data centers to enable per-datacenter.
+# hinted_handoff_enabled: DC1,DC2
+${hinted_handoff_enabled.name}: ${hinted_handoff_enabled.value}
