@@ -1,11 +1,13 @@
 (ns cassandra-utils.core
-  (:require [cassandra-utils.strint :as strint]
+  (:require [cassandra-utils.config :as config]
+            [cassandra-utils.strint :as strint]
             [clj-yaml.core :as yaml]
             [clojure.set :as sets]
             [clojure.string :as str]))
 
 (defn load-yaml
-  "Parses the yaml document and eagerly loads it into a map"
+  "Parses the yaml document and eagerly loads it into a map. See
+  clojure.java.io/reader for a complete list of supported types for path."
   [path]
   (yaml/parse-string (slurp path)))
 
@@ -28,11 +30,15 @@
   (keyword (first (str/split (name (key token)) #"\."))) (:properties template))
 
 (defn- comment-out-property? [k v template]
+  "Return true if v is blank and if the configuration property is commented out
+  by default in the template. For example, once vnodes was introduced, the
+  initial_token property has been commented out by default."
   (and
     (str/blank? (str-prop v))
     (get-in template [:properties k :commented-out?])))
 
-(defn- get-token-name [k v template]
+(defn- get-token-name
+  [k v template]
   (if (comment-out-property? k v template)
     (str "# " (name k))
     (name k)))
@@ -75,9 +81,9 @@
 (defn- get-added [old template]
   (sets/difference (set (keys (:properties template))) (set (keys old))))
 
-(defn merge-props [m template]
+(defn- merge-props [m template]
   (select-keys
-    (merge (into {} (for [[k v] (:properties template)] [k (:value v)]))
+    (merge (into {} (for [[k v] (:properties template)] [k ((:value v) m)]))
            m)
     (keys (:properties template))))
 
@@ -87,12 +93,27 @@
     (str-map
       (token-map
         (select-keys
-         (merge (into {} (for [[k v] (:properties template)] [k (:value v)]))
-                old-yaml)
+         (merge
+           (into {}
+                 (for [[k v] (:properties template)]
+                   [k ((:value v) old-yaml)]))
+           old-yaml)
          (keys (:properties template)))
         template))))
+
+(defn versions
+  "Returns a set of the supported versions to which upgrades can be performed."
+  [] (set (keys config/templates)))
 
 (defn merge-config [old-yaml template]
   {:output (get-output old-yaml template)
    :removed (get-removed old-yaml template)
+   ;; NOTE the set of added properties currently includes commented out
+   ;; properties which could be misleading. Commented out properties should not
+   ;; be included in this set.
    :added (get-added old-yaml template)})
+
+(defn update-config [path version]
+  (if (contains? config/templates version)
+    (merge-config (load-yaml path) (version config/templates))
+    {:old-config (load-yaml path) :updated? false}))
