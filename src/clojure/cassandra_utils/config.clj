@@ -13,8 +13,11 @@
   {:text (slurp (io/file (io/resource template-path)))
    :properties properties})
 
+(defn- enable-vnodes [template]
+  (assoc-in template [:properties :initial_token :commented-out?] true))
+
 (defn- disable-vnodes [template]
-  (assoc-in template [:num_tokens :value] 1))
+  (assoc-in template [:properties :num_tokens :value] 1))
 
 (def templates
   {:2.1.0
