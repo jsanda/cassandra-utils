@@ -105,7 +105,30 @@
   "Returns a set of the supported versions to which upgrades can be performed."
   [] (set (keys config/templates)))
 
-(defn merge-config [old-yaml template]
+(defn merge-config
+  "old-yaml
+  Should be a map of yaml configuration settings. See the load-yaml function
+  for generating a yaml configuration map.
+
+  template
+  An entry from the cassandra-utils.config/templates. In addition to providing
+  a template for the new configuration file, it also specifies default values
+  and whether or not properties are commented out by default.
+
+  The map returned contains three keys,
+
+  :output
+  The text of the new configuration with the properties from the old
+  configuration merged in.
+
+  :removed
+  A set of property names that were in the original configuration but have been
+  removed in the new configuration.
+
+  :added
+  A set of property names that were not in the original configuration but have
+  been added in the new configuration."
+  [old-yaml template]
   {:output (get-output old-yaml template)
    :removed (get-removed old-yaml template)
    ;; NOTE the set of added properties currently includes commented out
@@ -113,7 +136,28 @@
    ;; be included in this set.
    :added (get-added old-yaml template)})
 
-(defn update-config [path version]
+(defn update-config
+  "path Should specify a location of the existing yaml configuration file.
+
+  version is the target version of the upgrade. Use the versions function to
+  see a set of supported versions. Note that the version should be specified as
+  a keyword.
+
+  The map returned contains three keys,
+
+  :output
+  The text of the new configuration with the properties from the old
+  configuration merged in.
+
+  :removed
+  A set of property names that were in the original configuration but have been
+  removed in the new configuration.
+
+  :added
+  A set of property names that were not in the original configuration but have
+  been added in the new configuration."
+  [path version]
   (if (contains? config/templates version)
     (merge-config (load-yaml path) (version config/templates))
+    ;; TODO Figure out what to return if a bad version is specified
     {:old-config (load-yaml path) :updated? false}))

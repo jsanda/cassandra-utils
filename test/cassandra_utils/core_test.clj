@@ -77,14 +77,28 @@ property should be included in the merged, updated config."
       (is (= #{:authenticator} (:added merged-config)))
       (is (= "cluster_name: 'My Cluster'\nauthenticator: AllowAuthenticator")))))
 
-;
-;(deftest merge-config-preserve-comment-in-new-config
-;  (testing
-;"Comments in the new config should be preserved."
-;    (let [old "# Cassandra storage config YAML\ncluster_name: 'My Cluster'"
-;          new "# Cassandra storage config YAML\ncluster_name: '${:cluster_name}'"
-;          mappings {:prop-names #{:cluster_name}
-;                    :props {:cluster_name "'Test Cluster'"}}
-;          merged (merge-config old new mappings)]
-;      (is (= "# Cassandra storage config YAML\ncluster_name: 'My Cluster'"
-;             (:output merged))))))
+(deftest merge-config-preserve-comments-in-new-config
+  (testing
+"Comments in the new config should be preserved."
+    (let [old {:cluster_name "My Cluster"}
+          template {:text "# Cassandra config\n${cluster_name.name: '${cluster_name.value}'"
+                    :properties {:cluster_name (config/property "cluster_name" "Test Cluster")}}
+          merged-config (merge-config old template)]
+      (is (= "# Cassandra config\ncluster_name: 'My Cluster'")
+          (:output merged-config)))))
+
+(deftest update-config-vnodes-disabled
+  (testing "vnodes should be set to 1"
+    (let [merged-config (update-config "test-resources/vnodes-disabled.yaml" :2.1.0)]
+      (is (= (slurp "test-resources/vnodes-disabled.expected.yaml")
+             (:output merged-config)))
+      (is (= #{:num_tokens :hinted_handoff_enabled} (:added merged-config)))
+      (is (= #{:sliced_buffer_size_in_kb} (:removed merged-config))))))
+
+(deftest update-config-vnodes-enabled
+  (testing "vnodes should be set to 512 and initial_token should be commented out"
+    (let [merged-config (update-config "test-resources/vnodes-enabled.yaml" :2.1.0)]
+      (is (= (slurp "test-resources/vnodes-enabled.expected.yaml")
+             (:output merged-config)))
+      (is (= #{:initial_token} (:added merged-config)))
+      (is (empty? (:removed merged-config))))))

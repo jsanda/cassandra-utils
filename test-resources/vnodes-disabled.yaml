@@ -1,0 +1,20 @@
+# Cassandra storage config YAML
+
+# NOTE:
+#   See http://wiki.apache.org/cassandra/StorageConfiguration for
+#   full explanations of configuration directives
+# /NOTE
+
+# The name of the cluster. This is mainly used to prevent machines in
+# one logical cluster from joining another.
+cluster_name: 'My Cluster'
+
+# initial_token allows you to specify tokens manually.  While you can use # it with
+# vnodes (num_tokens > 1, above) -- in which case you should provide a
+# comma-separated list -- it's primarily used when adding nodes # to legacy clusters
+# that do not have vnodes enabled.
+initial_token: 12345678
+
+# Buffer size to use when performing contiguous column slices. 
+# Increase this to the size of the column slices you typically perform
+sliced_buffer_size_in_kb: 64
